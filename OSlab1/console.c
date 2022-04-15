@@ -36,6 +36,8 @@ struct {
 char cmd_mem[CMD_MEM_SIZE][INPUT_BUF]; // saving commadns in memory
 int cmd_mem_size = 0;
 int cmd_idx = -1;
+int up_key_press=0;
+int down_key_press=0;
 
 static int width = 0;
 static int empty_cell = 0;
@@ -272,6 +274,7 @@ void cursor_gathering_char(int col, int width)
 
 }
 
+
 void save_command(char* cmd)
 {
   int cmd_len = strlen(cmd);
@@ -281,17 +284,26 @@ void save_command(char* cmd)
   
   if(cmd_len)
   {
+    
     int off_limits = cmd_mem_size == CMD_MEM_SIZE;
     if(off_limits)
     {
+      cmd_mem_size--;
       //updating memory with new command data 
-      for (int i = 0; i < CMD_MEM_SIZE; i++)
+      for (int i = 0; i < CMD_MEM_SIZE-1; i++)
         memmove(cmd_mem[i],cmd_mem[i+1],sizeof(char)* INPUT_BUF);  
+
     }
     // save new data in curr mem size
+
     memmove(cmd_mem[cmd_mem_size], cmd, sizeof(char)* count);  
     cmd_mem[cmd_mem_size][count] = '\0';
+    if(off_limits)
+    {
+      cmd_mem_size++;
+    }
     cmd_mem_size += (off_limits ? 0 : 1);
+
 
   }
 }
@@ -356,9 +368,10 @@ consoleintr(int (*getc)(void))
       }
       break;
 
-    case ARR_UP:
+      case ARR_UP:
       if (cmd_idx != NO_CMD)
       {
+        up_key_press=1;
         for (int i = input.pos; i < input.e; i++)
           rightside_moving_cursor();
         
@@ -380,7 +393,53 @@ consoleintr(int (*getc)(void))
         }
 
         input.pos = input.e;
+        
         cmd_idx--;
+        //cmd_idx=(cmd_idx)%10;
+      }
+      
+
+    break;
+    
+    case ARR_DN:
+
+      if (cmd_idx != cmd_mem_size)
+      {
+        down_key_press=1;
+        for (int i = input.pos; i < input.e; i++)
+          rightside_moving_cursor();
+        
+        while(input.e != input.w &&
+          input.buf[(input.e-1) % INPUT_BUF] != '\n')
+        {
+          input.e--;
+          leftside_moving_cursor();
+        }
+
+        if(up_key_press==1)
+        {
+          cmd_idx+=2;
+          //cmd_idx=cmd_idx%10;
+          up_key_press=0;
+        }
+        else
+        {
+          ++cmd_idx;
+          //cmd_idx=cmd_idx%10;
+        }
+         
+         char temp_id;
+         for (int i = 0; i < INPUT_BUF; i++)
+         {
+             temp_id = cmd_mem[cmd_idx][i];
+             if (temp_id == '\0')
+               break;
+             consputc(temp_id);
+             input.buf[input.e++] = temp_id;
+         }
+
+           input.pos = input.e;
+           
       }
       
 
@@ -522,4 +581,3 @@ consoleinit(void)
 
   ioapicenable(IRQ_KBD, 0);
 }
-
