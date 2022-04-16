@@ -111,6 +111,13 @@ int sys_get_most_caller(void)
 
 int sys_wait_for_process(void)
 {
+  int pid;
+  if (argint(0, &pid) < 0)
+    return -1;
+    
+  struct proc *curr = myproc();
+  curr->pid = pid;
+  wait();
   return 0;
 
 }
