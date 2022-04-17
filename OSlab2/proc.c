@@ -10,6 +10,7 @@
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
+
 } ptable;
 
 static struct proc *initproc;
@@ -88,6 +89,10 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  for (int i_ = 0; i_ < 26; i_++)
+    p->call_count[i_] = 0;
+  
+  // memset(p->call_count, 0, sizeof(*p->call_count));
 
   release(&ptable.lock);
 
@@ -138,6 +143,9 @@ userinit(void)
   p->tf->eflags = FL_IF;
   p->tf->esp = PGSIZE;
   p->tf->eip = 0;  // beginning of initcode.S
+
+  // memset(p->call_count, 0, sizeof(*p->call_count));
+
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -563,17 +571,58 @@ int find_next_prime_number(int n)
 
 int get_call_count(int syscall_number)
 {
-  return 0;
+  struct proc *curproc = myproc();
+
+  // cprintf("see pid in get call:%d\n", curproc->pid);
+
+  return curproc->call_count[syscall_number]; 
 }
 
 int get_most_caller(int syscall_number)
 {
-  return 0;
+  int maxi=-1;
+  int most_procID=3;
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->call_count[syscall_number]>maxi)
+    {
+      maxi = p->call_count[syscall_number];
+      most_procID = p->pid;
+    }
+
+  }
+  return most_procID;
 
 }
 
 int wait_for_process(int pid)
 {
-  return 0;
+  struct proc *p;
+  struct proc *curproc = myproc();
+  
+  acquire(&ptable.lock);
+  // for(;;){
 
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      if(p->pid == pid){
+        
+        // cprintf("##3\n");
+        sleep(curproc, &ptable.lock);  //DOC: wait-sleep
+
+        // cprintf("##5\n");
+
+        // wait();
+
+        // if((curproc->killed) || (p->state == ZOMBIE)){
+        //   return -1;
+        // }
+
+        // cprintf("##4\n");
+      }
+    }
+  release(&ptable.lock);
+  // }  
+  return pid;
 }

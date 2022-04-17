@@ -100,17 +100,29 @@ int sys_find_next_prime_number(void)
 
 int sys_get_call_count(void)
 {
-  return 0;
+  int syscallID;
+
+  if(argint(0, &syscallID) < 0)
+    return -1;
+  
+  return get_call_count(syscallID);
 }
 
 int sys_get_most_caller(void)
 {
-  return 0;
+  int syscallID;
 
+  if(argint(0, &syscallID) < 0)
+    return -1;
+  
+  return get_most_caller(syscallID);
 }
 
 int sys_wait_for_process(void)
 {
-  return 0;
+  int pid;
+  if (argint(0, &pid) < 0)
+    return -1;
 
+  return wait_for_process(pid);
 }
