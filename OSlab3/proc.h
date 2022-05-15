@@ -54,7 +54,7 @@ struct proc {
   int qnum;                    // process level
   int arrival_time;            // time of arrival
   int arrival_time_ratio;      // ratio of time arrival
-  int cycles;                  // cycles executed
+  float cycles;                  // cycles executed
   int cycles_ratio;            // ratio of cycles executed
   int priority;                // priority executed
   int priority_ratio;            // ratio of priority executed
