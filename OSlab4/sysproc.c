@@ -163,12 +163,14 @@ void sys_BJF_sys_level(void)
 
 int sys_sem_init(void)
 {
-  int i, v;
+  int i, v, init;
   if (argint(0, &i) < 0) 
     return -1;
   if (argint(1, &v) < 0) 
     return -1;
-  return sem_init(i, v);
+  if (argint(2, &init) < 0) 
+    return -1;
+  return sem_init(i, v, init);
 }
 
 int sys_sem_acquire(void)

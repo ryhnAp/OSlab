@@ -11,16 +11,15 @@
 
 #define SEM_SIZE 5
 
-typedef struct 
-{
-  int head;
-  int tail;
-  int size;
-  void* processes[NPROC];
-  struct spinlock locks;
+#define NUM_OF_SEMAPHORES 10
 
-}Semaphore;
-
+struct Semaphore{
+  int max_procs;
+  int procs_no;
+  struct spinlock lock;
+  struct proc *queue[NPROC];
+};
+struct Semaphore semaphores[NUM_OF_SEMAPHORES];
 
 struct {
   struct spinlock lock;
@@ -886,90 +885,79 @@ void BJF_sys_level(int priority_ratio, int arrival_time_ratio, int executed_cycl
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Semaphore sems[SEM_SIZE];
-
-void sem_sleep(struct proc *p1)
+void add_proc_to_sem_queue(int i, struct proc *proc)
 {
-  acquire(&ptable.lock); 
-  p1->state = SLEEPING;
-  sched();
-  release(&ptable.lock);
+  for (int j = 0; j < NPROC; j++)
+  {
+    if (semaphores[i].queue[j] == 0){
+      semaphores[i].queue[j] = proc;
+      return;
+    }
+  }
 }
 
-void sem_wakeup(struct proc *p1)
+struct proc *pop_sem_queue(int i)
 {
-  acquire(&ptable.lock);
-  p1->state = RUNNABLE;
-  release(&ptable.lock);
+  struct proc *p = 0;
+  int j = 0;
+
+  if (semaphores[i].queue[0] == 0)
+    return 0;
+
+  p = semaphores[i].queue[0];
+
+  for (j = 0; j < NPROC - 1; j++)
+  {
+    if (semaphores[i].queue[j + 1] != 0)
+      semaphores[i].queue[j] = semaphores[i].queue[j + 1];
+    else
+    {
+      semaphores[i].queue[j] = 0;
+      break;
+    }
+  }
+
+  return p;
 }
 
-int sem_init(int i , int v)
+int sem_init(int i, int v, int init)
 {
-  struct spinlock lock;
-  lock.name = (char*)i;
-  lock.locked = 0;
-  sems[i].size = v;
-  sems[i].head = 0;
-  sems[i].tail = 0;
-  sems[i].locks = lock;
+  semaphores[i].max_procs = v;
+  semaphores[i].procs_no = init;
+  initlock(&(semaphores[i].lock), (char *)i + '0');
 
-  return 0;
+  return 1;
 }
-
 int sem_acquire(int i)
 {
-  acquire(&sems[i].locks);
-
-  while (sems[i].size <= 0)
+  struct proc *p = myproc();
+  acquire(&(semaphores[i].lock));
+  if (semaphores[i].procs_no < semaphores[i].max_procs)
+    semaphores[i].procs_no += 1;
+  else
   {
-    struct proc* p = myproc();
-    sems[i].processes[sems[i].tail] = p;
-    sems[i].tail = (sems[i].tail+1) % NPROC;
-    // sleep(p, &sems[i].locks);
-    sem_sleep(p);
+    add_proc_to_sem_queue(i, p);
+    sleep(p, &(semaphores[i].lock));
+    semaphores[i].procs_no += 1;
   }
-  sems[i].size --;
-  // if(sems[i].size <= 0)
-  // {
-  //   struct proc* p = myproc();
-  //   sems[i].processes[sems[i].tail ++] = p;
-  //   sem_sleep(p);
-  // }
-  // else
-  // {
-  //   sems[i].size--;
-  //   sems[i].tail--;
-  //   sems[i].locks.locked = ;
-  // }
-  release(&sems[i].locks);
-  return 0;
+  release(&(semaphores[i].lock));
+
+  return 1;
 }
 
 int sem_release(int i)
 {
-  acquire(&sems[i].locks);
-  sems[i].size ++;
-
-  if (sems[i].processes[sems[i].head])
-  {
-    sem_wakeup(sems[i].processes[sems[i].head]);
-    // wakeup(sems[i].processes[sems[i].head]);
-    sems[i].processes[sems[i].head] = 0;
-    sems[i].head = (sems[i].head+1) % NPROC;
-    
+  struct proc *p = 0;
+  acquire(&(semaphores[i].lock));
+  semaphores[i].procs_no -= 1;
+  p = pop_sem_queue(i);
+  // phstate[i] = HUNGRY;
+  release(&(semaphores[i].lock));
+  if (p != 0){
+    wakeup(p);
   }
-  
-  // if(sems[i].tail)
-  // {
-  //   struct proc* p = sems[i].processes[sems[i].tail];
-  //   sem_wakeup(p);
-  // }
-  // else
-  //   sems[i].size++;
-  
-  release(&sems[i].locks);
-  return 0;
+
+  return 1;
 }
 
 void reentrant(int count)

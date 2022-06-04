@@ -36,7 +36,7 @@ void BJF_sys_level(int, int, int);
 
 int sem_acquire(int);
 int sem_release(int);
-int sem_init(int, int);
+int sem_init(int, int, int);
 
 void reentrant(int);
 
