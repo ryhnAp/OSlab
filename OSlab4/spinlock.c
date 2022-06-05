@@ -68,7 +68,6 @@ release(struct spinlock *lk)
   lk->cpu = 0;
   lk->pid = -1;
 
-
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that all the stores in the critical
   // section are visible to other cores before the lock is released.

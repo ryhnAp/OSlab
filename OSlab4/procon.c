@@ -9,43 +9,45 @@
 #define FULL 2
 #define SIZE 5
 
-void producer(int act) {
+void producer(int act) 
+{
     for (int j = 0; j < SIZE; j++)
     {
-		sem_acquire(1);
-        sem_acquire(0);
+		sem_acquire(EMPTY);
+        sem_acquire(MUTEX);
 
         printf(1, "Produce value\n");
 
-        sem_release(0);
-		sem_release(2);
+        sem_release(MUTEX);
+		sem_release(FULL);
 
-		sem_acquire(0);
+		sem_acquire(MUTEX);
 
         printf(1, "Add to queue %d\n", j);
 
-		sem_release(0);
+		sem_release(MUTEX);
     }
 
-	sem_acquire(0);
+	sem_acquire(MUTEX);
 
     printf(1, "Full queue\n");
 
-	sem_release(0);
+	sem_release(MUTEX);
 
     exit();
 }
 
-void consumer(int act) {
-    for (int j = 0; j < 5; j++)
+void consumer(int act) 
+{
+    for (int j = 0; j < SIZE; j++)
     {
-		sem_acquire(2);
+		sem_acquire(FULL);
         sem_acquire(MUTEX);
 
         printf(1, "Pop from queue\n");
 
         sem_release(MUTEX);
-		sem_release(1);
+		sem_release(EMPTY);
 
 		sem_acquire(MUTEX);
 
@@ -71,13 +73,18 @@ int main()
     sem_init(FULL, 0);
 
     int pid = fork();
-    if (pid == 0) {
+    if (pid == 0) 
+    {
         producer(pid);
-    } else {
+    } 
+    else 
+    {
         int pid2 = fork();
-        if (pid2 == 0) {
+        if (pid2 == 0) 
+        {
             consumer(pid2);
-        } else {
+        } else 
+        {
 			wait();
 			wait();
 		}

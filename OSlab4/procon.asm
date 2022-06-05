@@ -38,25 +38,30 @@ int main()
 
     int pid = fork();
   34:	e8 f2 03 00 00       	call   42b <fork>
-    if (pid == 0) {
+    if (pid == 0) 
   39:	83 c4 10             	add    $0x10,%esp
   3c:	85 c0                	test   %eax,%eax
   3e:	75 0a                	jne    4a <main+0x4a>
+    {
         producer(pid);
   40:	83 ec 0c             	sub    $0xc,%esp
   43:	6a 00                	push   $0x0
   45:	e8 26 00 00 00       	call   70 <producer>
-    } else {
+    } 
+    else 
+    {
         int pid2 = fork();
   4a:	e8 dc 03 00 00       	call   42b <fork>
-        if (pid2 == 0) {
+        if (pid2 == 0) 
   4f:	85 c0                	test   %eax,%eax
   51:	75 0a                	jne    5d <main+0x5d>
+        {
             consumer(pid2);
   53:	83 ec 0c             	sub    $0xc,%esp
   56:	6a 00                	push   $0x0
   58:	e8 c3 00 00 00       	call   120 <consumer>
-        } else {
+        } else 
+        {
 			wait();
   5d:	e8 d9 03 00 00       	call   43b <wait>
 			wait();
@@ -70,20 +75,20 @@ int main()
   6e:	66 90                	xchg   %ax,%ax
 
 00000070 <producer>:
-void producer(int act) {
+{
   70:	f3 0f 1e fb          	endbr32 
   74:	55                   	push   %ebp
   75:	89 e5                	mov    %esp,%ebp
   77:	53                   	push   %ebx
     for (int j = 0; j < SIZE; j++)
   78:	31 db                	xor    %ebx,%ebx
-void producer(int act) {
+{
   7a:	83 ec 04             	sub    $0x4,%esp
-		sem_acquire(1);
+		sem_acquire(EMPTY);
   7d:	83 ec 0c             	sub    $0xc,%esp
   80:	6a 01                	push   $0x1
   82:	e8 54 04 00 00       	call   4db <sem_acquire>
-        sem_acquire(0);
+        sem_acquire(MUTEX);
   87:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
   8e:	e8 48 04 00 00       	call   4db <sem_acquire>
         printf(1, "Produce value\n");
@@ -92,13 +97,13 @@ void producer(int act) {
   95:	68 18 09 00 00       	push   $0x918
   9a:	6a 01                	push   $0x1
   9c:	e8 0f 05 00 00       	call   5b0 <printf>
-        sem_release(0);
+        sem_release(MUTEX);
   a1:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
   a8:	e8 36 04 00 00       	call   4e3 <sem_release>
-		sem_release(2);
+		sem_release(FULL);
   ad:	c7 04 24 02 00 00 00 	movl   $0x2,(%esp)
   b4:	e8 2a 04 00 00       	call   4e3 <sem_release>
-		sem_acquire(0);
+		sem_acquire(MUTEX);
   b9:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
   c0:	e8 16 04 00 00       	call   4db <sem_acquire>
         printf(1, "Add to queue %d\n", j);
@@ -110,14 +115,14 @@ void producer(int act) {
   cc:	68 27 09 00 00       	push   $0x927
   d1:	6a 01                	push   $0x1
   d3:	e8 d8 04 00 00       	call   5b0 <printf>
-		sem_release(0);
+		sem_release(MUTEX);
   d8:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
   df:	e8 ff 03 00 00       	call   4e3 <sem_release>
     for (int j = 0; j < SIZE; j++)
   e4:	83 c4 10             	add    $0x10,%esp
   e7:	83 fb 05             	cmp    $0x5,%ebx
   ea:	75 91                	jne    7d <producer+0xd>
-	sem_acquire(0);
+	sem_acquire(MUTEX);
   ec:	83 ec 0c             	sub    $0xc,%esp
   ef:	6a 00                	push   $0x0
   f1:	e8 e5 03 00 00       	call   4db <sem_acquire>
@@ -127,7 +132,7 @@ void producer(int act) {
   f8:	68 38 09 00 00       	push   $0x938
   fd:	6a 01                	push   $0x1
   ff:	e8 ac 04 00 00       	call   5b0 <printf>
-	sem_release(0);
+	sem_release(MUTEX);
  104:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
  10b:	e8 d3 03 00 00       	call   4e3 <sem_release>
     exit();
@@ -136,16 +141,16 @@ void producer(int act) {
  11c:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
 
 00000120 <consumer>:
-void consumer(int act) {
+{
  120:	f3 0f 1e fb          	endbr32 
  124:	55                   	push   %ebp
  125:	89 e5                	mov    %esp,%ebp
  127:	53                   	push   %ebx
-    for (int j = 0; j < 5; j++)
+    for (int j = 0; j < SIZE; j++)
  128:	31 db                	xor    %ebx,%ebx
-void consumer(int act) {
+{
  12a:	83 ec 04             	sub    $0x4,%esp
-		sem_acquire(2);
+		sem_acquire(FULL);
  12d:	83 ec 0c             	sub    $0xc,%esp
  130:	6a 02                	push   $0x2
  132:	e8 a4 03 00 00       	call   4db <sem_acquire>
@@ -161,7 +166,7 @@ void consumer(int act) {
         sem_release(MUTEX);
  151:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
  158:	e8 86 03 00 00       	call   4e3 <sem_release>
-		sem_release(1);
+		sem_release(EMPTY);
  15d:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  164:	e8 7a 03 00 00       	call   4e3 <sem_release>
 		sem_acquire(MUTEX);
@@ -170,7 +175,7 @@ void consumer(int act) {
 		printf(1, "Consume value %d\n", j);
  175:	83 c4 0c             	add    $0xc,%esp
  178:	53                   	push   %ebx
-    for (int j = 0; j < 5; j++)
+    for (int j = 0; j < SIZE; j++)
  179:	83 c3 01             	add    $0x1,%ebx
 		printf(1, "Consume value %d\n", j);
  17c:	68 54 09 00 00       	push   $0x954
@@ -179,7 +184,7 @@ void consumer(int act) {
 		sem_release(MUTEX);
  188:	c7 04 24 00 00 00 00 	movl   $0x0,(%esp)
  18f:	e8 4f 03 00 00       	call   4e3 <sem_release>
-    for (int j = 0; j < 5; j++)
+    for (int j = 0; j < SIZE; j++)
  194:	83 c4 10             	add    $0x10,%esp
  197:	83 fb 05             	cmp    $0x5,%ebx
  19a:	75 91                	jne    12d <consumer+0xd>
