@@ -1,3 +1,5 @@
+// Mutual exclusion spin locks.
+
 #include "types.h"
 #include "defs.h"
 #include "param.h"
@@ -7,12 +9,14 @@
 #include "proc.h"
 #include "spinlock.h"
 
-void initlock(struct spinlock *lk, char *name)
+void
+initlock(struct spinlock *lk, char *name)
 {
   lk->name = name;
   lk->locked = 0;
   lk->cpu = 0;
   lk->pid = -1;
+
 }
 
 // Acquire the lock.
@@ -53,7 +57,6 @@ acquire(struct spinlock *lk)
   lk->cpu = mycpu();
   getcallerpcs(&lk, lk->pcs);
 }
-
 // Release the lock.
 void
 release(struct spinlock *lk)
@@ -64,6 +67,7 @@ release(struct spinlock *lk)
   lk->pcs[0] = 0;
   lk->cpu = 0;
   lk->pid = -1;
+
 
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that all the stores in the critical

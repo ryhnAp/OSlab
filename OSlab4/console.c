@@ -15,31 +15,6 @@
 #include "proc.h"
 #include "x86.h"
 
-#define ARR_UP          0xE2 // up arrow 
-#define ARR_DN          0xE3 // down arrow 
-#define ARR_LF          0xE4 // left arrow 
-#define ARR_RT          0xE5 // right arrow 
-
-
-#define INPUT_BUF 128
-struct {
-  char buf[INPUT_BUF];
-  uint r;  // Read index
-  uint w;  // Write index
-  uint e;  // Edit index
-  uint pos; // curr input buf size/position
-} input;
-
-#define CMD_MEM_SIZE 10
-#define NO_CMD -1
-
-char cmd_mem[CMD_MEM_SIZE][INPUT_BUF]; // saving commadns in memory
-int cmd_mem_size = 0;
-int cmd_idx = -1;
-
-static int width = 0;
-static int empty_cell = 0;
-
 static void consputc(int);
 
 static int panicked = 0;
@@ -153,21 +128,6 @@ panic(char *s)
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
-void updating_crt(int pos, int width)
-{
-  //putting chars forward and    ...abc.
-  //putting crt buffer backward  ....abc
-  ushort temp = crt[pos-1];
-  ushort temp_;
-  for (int i = pos; i <= pos+width+1; i++)
-  {
-    temp_ = crt[i];
-    crt[i] = temp;
-    temp = temp_;
-  }
-
-}
-
 static void
 cgaputc(int c)
 {
@@ -181,33 +141,10 @@ cgaputc(int c)
 
   if(c == '\n')
     pos += 80 - pos%80;
-  else if(c == BACKSPACE)
-  {
-    if(pos > 0)
-     --pos;
-  } 
-  else if(c == ARR_RT)
-  {
-    if (width)
-    {
-      ++pos;
-      width--;
-    }
-  }
-  else if(c == ARR_LF)
-  {
-    int buf_char_size = strlen(input.buf)-empty_cell;
-    if (width<buf_char_size)
-    {
-      --pos;
-      width++;
-    }
-  }
-  else
-  {
-    updating_crt(pos,width);
+  else if(c == BACKSPACE){
+    if(pos > 0) --pos;
+  } else
     crt[pos++] = (c&0xff) | 0x0700;  // black on white
-  }
 
   if(pos < 0 || pos > 25*80)
     panic("pos under/overflow");
@@ -222,8 +159,7 @@ cgaputc(int c)
   outb(CRTPORT+1, pos>>8);
   outb(CRTPORT, 15);
   outb(CRTPORT+1, pos);
-  if(c != ARR_RT && c != ARR_LF)
-  crt[pos+width] = ' ' | 0x0700;
+  crt[pos] = ' ' | 0x0700;
 }
 
 void
@@ -242,92 +178,15 @@ consputc(int c)
   cgaputc(c);
 }
 
+#define INPUT_BUF 128
+struct {
+  char buf[INPUT_BUF];
+  uint r;  // Read index
+  uint w;  // Write index
+  uint e;  // Edit index
+} input;
 
 #define C(x)  ((x)-'@')  // Control-x
-
-void cursor_gathering_char(int col, int width)
-{
-  //inspiring from "cgaputc" function.
-
-  int pos;
-
-  // Cursor position: col + 80*row.
-  outb(CRTPORT, 14);
-  pos = inb(CRTPORT+1) << 8;
-  outb(CRTPORT, 15);
-  pos |= inb(CRTPORT+1);
-
-  //moving crt buf
-  updating_crt(pos,width);
-
-  crt[pos++] = (col&0xff) | 0x0700;  // black on white
-  
-  pos = pos+1; //place cursor to next pos
-
-  outb(CRTPORT, 14);
-  outb(CRTPORT+1, pos>>8);
-  outb(CRTPORT, 15);
-  outb(CRTPORT+1, pos);
-  crt[pos+width] = ' ' | 0x0700;  
-
-}
-
-void save_command(char* cmd)
-{
-  int cmd_len = strlen(cmd);
-  int count = cmd_len;
-  if (count>INPUT_BUF)
-    count = INPUT_BUF-1;
-  
-  if(cmd_len)
-  {
-    int off_limits = cmd_mem_size == CMD_MEM_SIZE;
-    if(off_limits)
-    {
-      //updating memory with new command data 
-      for (int i = 0; i < CMD_MEM_SIZE; i++)
-        memmove(cmd_mem[i],cmd_mem[i+1],sizeof(char)* INPUT_BUF);  
-    }
-    // save new data in curr mem size
-    memmove(cmd_mem[cmd_mem_size], cmd, sizeof(char)* count);  
-    cmd_mem[cmd_mem_size][count] = '\0';
-    cmd_mem_size += (off_limits ? 0 : 1);
-
-  }
-}
-
-void leftside_moving_cursor()
-{
-  int pos;
-  outb(CRTPORT, 14);                  
-  pos = inb(CRTPORT+1) << 8;
-  outb(CRTPORT, 15);
-  pos |= inb(CRTPORT+1);    
-
-  pos--;
-
-  outb(CRTPORT, 15);
-  outb(CRTPORT+1, (unsigned char)(pos&0xFF));
-  outb(CRTPORT, 14);
-  outb(CRTPORT+1, (unsigned char )((pos>>8)&0xFF));
-  crt[pos+width] = ' ' | 0x0700;
-}
-
-void rightside_moving_cursor()
-{
-  int pos;
-  outb(CRTPORT, 14);                  
-  pos = inb(CRTPORT+1) << 8;
-  outb(CRTPORT, 15);
-  pos |= inb(CRTPORT+1);    
-
-  pos++;
-
-  outb(CRTPORT, 15);
-  outb(CRTPORT+1, (unsigned char)(pos&0xFF));
-  outb(CRTPORT, 14);
-  outb(CRTPORT+1, (unsigned char )((pos>>8)&0xFF));
-}
 
 void
 consoleintr(int (*getc)(void))
@@ -351,102 +210,17 @@ consoleintr(int (*getc)(void))
     case C('H'): case '\x7f':  // Backspace
       if(input.e != input.w){
         input.e--;
-        empty_cell++;
         consputc(BACKSPACE);
       }
       break;
-
-    case ARR_UP:
-      if (cmd_idx != NO_CMD)
-      {
-        for (int i = input.pos; i < input.e; i++)
-          rightside_moving_cursor();
-        
-        while(input.e != input.w &&
-          input.buf[(input.e-1) % INPUT_BUF] != '\n')
-        {
-          input.e--;
-          leftside_moving_cursor();
-        }
-
-        char temp_id;
-        for (int i = 0; i < INPUT_BUF; i++)
-        {
-          temp_id = cmd_mem[cmd_idx][i];
-          if (temp_id == '\0')
-            break;
-          consputc(temp_id);
-          input.buf[input.e++] = temp_id;
-        }
-
-        input.pos = input.e;
-        cmd_idx--;
-      }
-      
-
-    break;
-
-    case ARR_RT:
-      consputc(ARR_RT);
-      // if(width)
-      //   input.w++;
-    break;
-
-    case ARR_LF:
-      consputc(ARR_LF);
-      // int buf_char_size = strlen(input.buf)-empty_cell;
-      //   if (width<buf_char_size)
-      //   {
-      //     input.w--;
-      //     input.e--;
-      //   }
-    break;
-
     default:
-      if(c != 0 && input.e-input.r < INPUT_BUF)
-      {
+      if(c != 0 && input.e-input.r < INPUT_BUF){
         c = (c == '\r') ? '\n' : c;
-        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF)
-        {
-          input.buf[input.e++ % INPUT_BUF] = c;
-          consputc(c);
-
-          width =0;
-
-          char cmd_[INPUT_BUF];
-          for (int i = 0; i+input.w < input.e -1; i++)
-          {
-            cmd_[i] = input.buf[(input.w + i) % INPUT_BUF];
-          }
-          cmd_[(input.e -1 -input.w)%INPUT_BUF] = '\0';
-
-          save_command(cmd_);
-          cmd_idx = cmd_mem_size;
-
-          input.pos = input.e;
+        input.buf[input.e++ % INPUT_BUF] = c;
+        consputc(c);
+        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
           input.w = input.e;
           wakeup(&input.r);
-        }
-        else
-        {
-          if (width == 0)
-          {
-            input.buf[input.e++ % INPUT_BUF] = c;
-            input.pos++;
-
-            consputc(c);
-          }
-          else
-          {
-            for (int i = input.e; i > input.pos-1; i++)
-              input.buf[(i+1)%INPUT_BUF] = input.buf[(i)%INPUT_BUF];
-            
-            input.buf[input.pos%INPUT_BUF] = c;
-
-            input.e++;
-            input.pos++;
-            cursor_gathering_char(c,width);
-          }
         }
       }
       break;

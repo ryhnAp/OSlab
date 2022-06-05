@@ -90,92 +90,23 @@ sys_uptime(void)
   return xticks;
 }
 
-int sys_find_next_prime_number(void)
-{
-  register int edi asm("edi");
-  int num = edi;
-
-  return find_next_prime_number(num);
-}
-
-int sys_get_call_count(void)
-{
-  int syscallID;
-
-  if(argint(0, &syscallID) < 0)
-    return -1;
-  
-  return get_call_count(syscallID);
-}
-
-int sys_get_most_caller(void)
-{
-  int syscallID;
-
-  if(argint(0, &syscallID) < 0)
-    return -1;
-  
-  return get_most_caller(syscallID);
-}
-
-int sys_wait_for_process(void)
-{
-  int pid;
-  if (argint(0, &pid) < 0)
-    return -1;
-
-  return wait_for_process(pid);
-}
-
-int sys_change_queue(void) 
-{
-  int pid, queue;
-  if (argint(0, &pid) < 0) 
-    return -1;
-  if (argint(1, &queue) < 0) 
-    return -1;
-  return change_queue(pid, queue);
-}
-
-int sys_print_process(void) 
-{
-  return print_process();
-}
-
-void sys_BJF_proc_level(void)
-{
-  int pid, priority_ratio, arrival_time_ratio, executed_cycle_ratio;
-  argint(0, &pid);
-  argint(1, &priority_ratio);
-  argint(2, &arrival_time_ratio);
-  argint(3, &executed_cycle_ratio);
-  BJF_proc_level(pid, priority_ratio, arrival_time_ratio, executed_cycle_ratio);
-}
-
-void sys_BJF_sys_level(void)
-{
-  int priority_ratio, arrival_time_ratio, executed_cycle_ratio;
-  argint(0, &priority_ratio);
-  argint(1, &arrival_time_ratio);
-  argint(2, &executed_cycle_ratio);
-  BJF_sys_level(priority_ratio, arrival_time_ratio, executed_cycle_ratio);
-}
-
 int sys_sem_init(void)
 {
-  int i, v, init;
+  int i;
+  int k;
+
   if (argint(0, &i) < 0) 
     return -1;
-  if (argint(1, &v) < 0) 
+  if (argint(1, &k) < 0)
     return -1;
-  if (argint(2, &init) < 0) 
-    return -1;
-  return sem_init(i, v, init);
+
+  return sem_init(i, k);
 }
 
 int sys_sem_acquire(void)
 {
   int i;
+
   if (argint(0, &i) < 0) 
     return -1;
 
@@ -185,14 +116,19 @@ int sys_sem_acquire(void)
 int sys_sem_release(void)
 {
   int i;
-  if (argint(0, &i) < 0) 
+
+  if (argint(0, &i) < 0)
     return -1;
+
   return sem_release(i);
 }
 
 void sys_reentrant(void)
 {
   int count;
-  argint(0, &count);
+
+  if (argint(0, &count) < 0)
+    return;
+
   reentrant(count);
 }

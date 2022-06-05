@@ -30,18 +30,8 @@ SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
 
-SYSCALL(find_next_prime_number)
-SYSCALL(get_call_count)
-SYSCALL(get_most_caller)
-SYSCALL(wait_for_process)
-
-SYSCALL(change_queue)
-SYSCALL(print_process)
-SYSCALL(BJF_proc_level)
-SYSCALL(BJF_sys_level)
-
+SYSCALL(sem_init)
 SYSCALL(sem_acquire)
 SYSCALL(sem_release)
-SYSCALL(sem_init)
 
 SYSCALL(reentrant)

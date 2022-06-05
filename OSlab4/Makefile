@@ -175,8 +175,6 @@ UPROGS=\
 	_ln\
 	_ls\
 	_mkdir\
-	_sort_string\
-	_check_syscall_running_steps\
 	_rm\
 	_sh\
 	_stressfs\
@@ -185,15 +183,7 @@ UPROGS=\
 	_zombie\
 	_procon\
 	_reentrant\
-	_change_queue\
-	_print_process\
-	_foo\
-	_BJF_proc_level\
-	_BJF_sys_level\
-	_find_next_prime_number\
-	_get_call_count\
-	_get_most_caller\
-	_wait_for_process\
+
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -262,8 +252,8 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
-	ln.c ls.c sort_string.c check_syscall_running_steps.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c find_next_prime_number.c get_call_count.c get_most_caller.c wait_for_process.c\
-	printf.c umalloc.c procon.c reentrant.c change_queue.c print_process.c foo.c BJF_proc_level.c BJF_sys_level.c\
+	ln.c ls.c procon.c reentrant.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
+	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

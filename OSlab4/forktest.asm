@@ -60,11 +60,11 @@ main(void)
 {
   5a:	83 ec 10             	sub    $0x10,%esp
   write(fd, s, strlen(s));
-  5d:	68 b4 04 00 00       	push   $0x4b4
+  5d:	68 74 04 00 00       	push   $0x474
   62:	e8 69 01 00 00       	call   1d0 <strlen>
   67:	83 c4 0c             	add    $0xc,%esp
   6a:	50                   	push   %eax
-  6b:	68 b4 04 00 00       	push   $0x4b4
+  6b:	68 74 04 00 00       	push   $0x474
   70:	6a 01                	push   $0x1
   72:	e8 5c 03 00 00       	call   3d3 <write>
   77:	83 c4 10             	add    $0x10,%esp
@@ -98,11 +98,11 @@ main(void)
   b6:	75 49                	jne    101 <forktest+0xb1>
   write(fd, s, strlen(s));
   b8:	83 ec 0c             	sub    $0xc,%esp
-  bb:	68 e6 04 00 00       	push   $0x4e6
+  bb:	68 a6 04 00 00       	push   $0x4a6
   c0:	e8 0b 01 00 00       	call   1d0 <strlen>
   c5:	83 c4 0c             	add    $0xc,%esp
   c8:	50                   	push   %eax
-  c9:	68 e6 04 00 00       	push   $0x4e6
+  c9:	68 a6 04 00 00       	push   $0x4a6
   ce:	6a 01                	push   $0x1
   d0:	e8 fe 02 00 00       	call   3d3 <write>
 }
@@ -113,33 +113,33 @@ main(void)
   da:	e8 d4 02 00 00       	call   3b3 <exit>
   write(fd, s, strlen(s));
   df:	83 ec 0c             	sub    $0xc,%esp
-  e2:	68 bf 04 00 00       	push   $0x4bf
+  e2:	68 7f 04 00 00       	push   $0x47f
   e7:	e8 e4 00 00 00       	call   1d0 <strlen>
   ec:	83 c4 0c             	add    $0xc,%esp
   ef:	50                   	push   %eax
-  f0:	68 bf 04 00 00       	push   $0x4bf
+  f0:	68 7f 04 00 00       	push   $0x47f
   f5:	6a 01                	push   $0x1
   f7:	e8 d7 02 00 00       	call   3d3 <write>
       exit();
   fc:	e8 b2 02 00 00       	call   3b3 <exit>
   write(fd, s, strlen(s));
  101:	83 ec 0c             	sub    $0xc,%esp
- 104:	68 d3 04 00 00       	push   $0x4d3
+ 104:	68 93 04 00 00       	push   $0x493
  109:	e8 c2 00 00 00       	call   1d0 <strlen>
  10e:	83 c4 0c             	add    $0xc,%esp
  111:	50                   	push   %eax
- 112:	68 d3 04 00 00       	push   $0x4d3
+ 112:	68 93 04 00 00       	push   $0x493
  117:	6a 01                	push   $0x1
  119:	e8 b5 02 00 00       	call   3d3 <write>
     exit();
  11e:	e8 90 02 00 00       	call   3b3 <exit>
   write(fd, s, strlen(s));
  123:	83 ec 0c             	sub    $0xc,%esp
- 126:	68 f4 04 00 00       	push   $0x4f4
+ 126:	68 b4 04 00 00       	push   $0x4b4
  12b:	e8 a0 00 00 00       	call   1d0 <strlen>
  130:	83 c4 0c             	add    $0xc,%esp
  133:	50                   	push   %eax
- 134:	68 f4 04 00 00       	push   $0x4f4
+ 134:	68 b4 04 00 00       	push   $0x4b4
  139:	6a 01                	push   $0x1
  13b:	e8 93 02 00 00       	call   3d3 <write>
     exit();
@@ -678,77 +678,28 @@ SYSCALL(uptime)
  450:	cd 40                	int    $0x40
  452:	c3                   	ret    
 
-00000453 <find_next_prime_number>:
+00000453 <sem_init>:
 
-SYSCALL(find_next_prime_number)
- 453:	b8 16 00 00 00       	mov    $0x16,%eax
+SYSCALL(sem_init)
+ 453:	b8 1f 00 00 00       	mov    $0x1f,%eax
  458:	cd 40                	int    $0x40
  45a:	c3                   	ret    
 
-0000045b <get_call_count>:
-SYSCALL(get_call_count)
- 45b:	b8 17 00 00 00       	mov    $0x17,%eax
+0000045b <sem_acquire>:
+SYSCALL(sem_acquire)
+ 45b:	b8 20 00 00 00       	mov    $0x20,%eax
  460:	cd 40                	int    $0x40
  462:	c3                   	ret    
 
-00000463 <get_most_caller>:
-SYSCALL(get_most_caller)
- 463:	b8 18 00 00 00       	mov    $0x18,%eax
+00000463 <sem_release>:
+SYSCALL(sem_release)
+ 463:	b8 21 00 00 00       	mov    $0x21,%eax
  468:	cd 40                	int    $0x40
  46a:	c3                   	ret    
 
-0000046b <wait_for_process>:
-SYSCALL(wait_for_process)
- 46b:	b8 19 00 00 00       	mov    $0x19,%eax
+0000046b <reentrant>:
+
+SYSCALL(reentrant)
+ 46b:	b8 22 00 00 00       	mov    $0x22,%eax
  470:	cd 40                	int    $0x40
  472:	c3                   	ret    
-
-00000473 <change_queue>:
-
-SYSCALL(change_queue)
- 473:	b8 1a 00 00 00       	mov    $0x1a,%eax
- 478:	cd 40                	int    $0x40
- 47a:	c3                   	ret    
-
-0000047b <print_process>:
-SYSCALL(print_process)
- 47b:	b8 1b 00 00 00       	mov    $0x1b,%eax
- 480:	cd 40                	int    $0x40
- 482:	c3                   	ret    
-
-00000483 <BJF_proc_level>:
-SYSCALL(BJF_proc_level)
- 483:	b8 1c 00 00 00       	mov    $0x1c,%eax
- 488:	cd 40                	int    $0x40
- 48a:	c3                   	ret    
-
-0000048b <BJF_sys_level>:
-SYSCALL(BJF_sys_level)
- 48b:	b8 1d 00 00 00       	mov    $0x1d,%eax
- 490:	cd 40                	int    $0x40
- 492:	c3                   	ret    
-
-00000493 <sem_acquire>:
-
-SYSCALL(sem_acquire)
- 493:	b8 1e 00 00 00       	mov    $0x1e,%eax
- 498:	cd 40                	int    $0x40
- 49a:	c3                   	ret    
-
-0000049b <sem_release>:
-SYSCALL(sem_release)
- 49b:	b8 1f 00 00 00       	mov    $0x1f,%eax
- 4a0:	cd 40                	int    $0x40
- 4a2:	c3                   	ret    
-
-000004a3 <sem_init>:
-SYSCALL(sem_init)
- 4a3:	b8 20 00 00 00       	mov    $0x20,%eax
- 4a8:	cd 40                	int    $0x40
- 4aa:	c3                   	ret    
-
-000004ab <reentrant>:
-
- 4ab:	b8 21 00 00 00       	mov    $0x21,%eax
- 4b0:	cd 40                	int    $0x40
- 4b2:	c3                   	ret    

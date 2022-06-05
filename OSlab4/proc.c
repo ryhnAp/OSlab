@@ -7,24 +7,20 @@
 #include "proc.h"
 #include "spinlock.h"
 
-// #include "semaphore.h"
-
 #define SEM_SIZE 5
 
-#define NUM_OF_SEMAPHORES 10
-
-struct Semaphore{
-  int max_procs;
-  int procs_no;
+struct semaphore 
+{
+  int value;
+  int active;
   struct spinlock lock;
-  struct proc *queue[NPROC];
 };
-struct Semaphore semaphores[NUM_OF_SEMAPHORES];
+
+struct semaphore sema[SEM_SIZE];
 
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
-
 } ptable;
 
 static struct proc *initproc;
@@ -33,27 +29,7 @@ int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
 
-#define COL_WIDTH 15
-
 static void wakeup1(void *chan);
-
-int get_time(void) 
-{
-  uint ticks0;
-  acquire(&tickslock);
-  ticks0 = ticks;
-  release(&tickslock);
-  return ticks0;
-}
-
-int rand_int(int low, int high)
-{
-  int rand;
-  acquire(&tickslock);
-  rand = (ticks * ticks * ticks * 71413) % (high - low + 1) + low;
-  release(&tickslock);
-  return rand;
-}
 
 void
 pinit(void)
@@ -123,20 +99,6 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  for (int i_ = 0; i_ < 30; i_++)
-    p->call_count[i_] = 0;
-  p->qnum = 2; // default
-  p->arrival_time = get_time();
-  p->cycles = 0;
-  p->wait_cycles = 0;
-
-  p->arrival_time_ratio = 1;
-  p->cycles_ratio = 1;
-  p->priority = rand_int(1, 1000);
-  p->priority_ratio = 1;
-
-
-  // memset(p->call_count, 0, sizeof(*p->call_count));
 
   release(&ptable.lock);
 
@@ -187,9 +149,6 @@ userinit(void)
   p->tf->eflags = FL_IF;
   p->tf->esp = PGSIZE;
   p->tf->eip = 0;  // beginning of initcode.S
-
-  // memset(p->call_count, 0, sizeof(*p->call_count));
-
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -363,62 +322,6 @@ wait(void)
   }
 }
 
-double rank_calc(struct proc* p)
-{
-  return (p->priority * p->priority_ratio) +
-      (p->arrival_time * p->arrival_time_ratio) +
-      (p->cycles * p->cycles_ratio);
-
-}
-
-struct proc* find_process(int* flag) 
-{
-  
-  struct proc *p;
-
-  //Round Robin
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) 
-    if(p->state == RUNNABLE && p->qnum == 1) {
-      *flag = 1;
-      return p;
-    }
-  
-  //FCFS
-  struct proc *first_p = 0;
-  int min_arrival_time = 1e6;
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == RUNNABLE && p->qnum == 2) 
-      if(p->arrival_time < min_arrival_time) 
-      {
-        min_arrival_time = p->arrival_time;
-        first_p = p;
-      }
-  if(min_arrival_time != 1e6) 
-  {
-    *flag = 1;
-    return first_p;  
-  }
-
-  //BJF
-  struct proc *min_p = 0;
-  int min_rank = 1e6;
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == RUNNABLE && p->qnum == 3)
-      if (rank_calc(p) < min_rank)
-      {
-        min_rank = rank_calc(p);
-        min_p = p;
-      }
-  if(min_rank != 1e6) 
-  {
-    *flag = 1;
-    return min_p;  
-  }
-
-  *flag = 0;
-  return p;
-}
-
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -444,26 +347,13 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->wait_cycles >= 8000 && p->state == RUNNABLE) {
-          p->wait_cycles = 0;
-          p->qnum = 1; // transfer this process to first queue
-        } else if(p->state == RUNNABLE){
-          p->wait_cycles++;
-        }
-      }
-
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      int flag = 0;
-      p = find_process(&flag);
-      
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      p->cycles += 0.1;
-      p->wait_cycles = 0;
+
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -475,8 +365,6 @@ scheduler(void)
 
   }
 }
-
-
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
@@ -510,8 +398,6 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
-  // myproc()->arrival_time = get_time();
-  // myproc()->cycles += 0.1;
   sched();
   release(&ptable.lock);
 }
@@ -658,306 +544,57 @@ procdump(void)
   }
 }
 
-int find_next_prime_number(int n)
-{
-  int find=0, sol, match;
-  if (n<=1)
-    return sol = 2;
 
-  while (!find)
+int sem_init(int i, int value) 
+{
+  acquire(&sema[i].lock);
+
+  if (sema[i].active == 0) 
   {
-    n++;
-    match = 0;
-    for (int i = 2; i < n; i++)
-    {
-      if (n%i == 0)
-      {
-        match++;
-        break;
-      }
-    }
-    if (!match)
-    {
-      sol = n;
-      find = 1;
-      return sol;
-    }
-  }
-  return sol =0;
-}
-
-int get_call_count(int syscall_number)
-{
-  struct proc *curproc = myproc();
-
-  // cprintf("see pid in get call:%d\n", curproc->pid);
-
-  return curproc->call_count[syscall_number]; 
-}
-
-int get_most_caller(int syscall_number)
-{
-  int maxi=-1;
-  int most_procID=3;
-  struct proc *p;
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    sema[i].active = 1;
+    sema[i].value = value;
+  } 
+  else 
   {
-    if (p->call_count[syscall_number]>maxi)
-    {
-      maxi = p->call_count[syscall_number];
-      most_procID = p->pid;
-    }
-
-  }
-  return most_procID;
-
-}
-
-int wait_for_process(int pid)
-{
-  struct proc *p;
-  // struct proc *curproc = myproc();
-  
-  // acquire(&ptable.lock);
-  // for(;;){
-
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    {
-      if(p->pid == pid){
-
-        wait();
-
-      }
-    }
-  // release(&ptable.lock);
-  // }  
-  return pid;
-}
-
-int change_queue(int pid, int tqnum) 
-{
-  struct proc *p;
-  if (tqnum < 1 || tqnum > 3)
     return -1;
-  // acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == pid){
-      p->qnum = tqnum;
-      p->wait_cycles = 0; // for retransferring 
-      // release(&ptable.lock);
-      return 0;
-    }
-  }
-  // release(&ptable.lock);
-  return -1;
-}
-
-void string_in_cell(char* cell_name)
-{
-  int point, len;
-  char t[COL_WIDTH+1] = "               ";
-  len = strlen(cell_name);
-  point = (COL_WIDTH - len)/2;
-
-  for (int i = 0; i < len; i++)
-  {
-    t[i+point] = cell_name[i];
   }
 
-  cprintf("%s", t);
+  release(&sema[i].lock);
+
+  return 0;
 }
 
-void int_in_cell(int val)
+int sem_acquire(int i) 
 {
-  char char_int[] = "0123456789";
-  int counter = 0;
-  char char_buff[COL_WIDTH];
-  char rev_buff[COL_WIDTH];
+  acquire(&sema[i].lock);
 
-  while(val > 0)
+  if (sema[i].value >= 1) 
   {
-    int rem = val%10;
-    val /= 10;
-    char_buff[counter++] = char_int[rem];
-  }
-
-  for(int i = counter-1; i >= 0; i--)
-      rev_buff[counter-i-1] = char_buff[i];
-
-  rev_buff[counter++] = '\0';
-
-  string_in_cell(rev_buff);
-  
-}
-
-int print_process(void) 
-{
-  struct proc *p;
-  acquire(&ptable.lock);
-
-  string_in_cell("name"); string_in_cell("pid"); string_in_cell("state"); string_in_cell("queue"); string_in_cell("cycles"); 
-  string_in_cell("arrival time"); string_in_cell("priority ratio"); string_in_cell("at ratio"); string_in_cell("cycles ratio"); string_in_cell("rank");
-  cprintf("\n......................................................................................................................................................\n");
-
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    sema[i].value -= 1;
+  } 
+  else 
   {
-    if(p->state == 0) 
-      continue;
-    
-    string_in_cell(p->name);
-    
-    int_in_cell(p->pid);
-
-    switch (p->state)
+    while(sema[i].value < 1) 
     {
-      case 0:
-        string_in_cell("UNUSED");
-        break;
-      case 1:
-        string_in_cell("EMBRYO");
-        break;
-      case 2:
-        string_in_cell("SLEEPING");
-        break;
-      case 3:
-        string_in_cell("RUNNABLE");
-        break;
-      case 4:
-        string_in_cell("RUNNING");
-        break;
-      case 5:
-        string_in_cell("ZOMBIE");
-        break;
-
-      default:
-        break;
+      sleep(&sema[i], &sema[i].lock);
     }
-
-    int_in_cell(p->qnum);
-
-    int_in_cell(p->cycles);
-
-    int_in_cell(p->arrival_time);
-
-    int_in_cell(p->priority_ratio);
-
-    int_in_cell(p->arrival_time_ratio);
-
-    int_in_cell(p->cycles_ratio);
-
-    int_in_cell(rank_calc(p));
-
-    cprintf("\n");
-  }
-  release(&ptable.lock);
-  return -1;
-}
-
-void BJF_proc_level(int pid, int priority_ratio, int arrival_time_ratio, int executed_cycle_ratio)
-{
-  struct proc *p;
-
-  acquire(&ptable.lock);
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-  {
-    if (p->pid == pid)
-    {
-      p->priority_ratio = priority_ratio;
-      p->arrival_time_ratio = arrival_time_ratio;
-      p->cycles_ratio = executed_cycle_ratio; 
-    }
-  }
-  release(&ptable.lock); 
-}
-
-void BJF_sys_level(int priority_ratio, int arrival_time_ratio, int executed_cycle_ratio)
-{
-  struct proc *p;
-
-  acquire(&ptable.lock);
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-  {
-    p->priority_ratio = priority_ratio;
-    p->arrival_time_ratio = arrival_time_ratio;
-    p->cycles_ratio = executed_cycle_ratio; 
-  }
-  release(&ptable.lock); 
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void add_proc_to_sem_queue(int i, struct proc *proc)
-{
-  for (int j = 0; j < NPROC; j++)
-  {
-    if (semaphores[i].queue[j] == 0){
-      semaphores[i].queue[j] = proc;
-      return;
-    }
-  }
-}
-
-struct proc *pop_sem_queue(int i)
-{
-  struct proc *p = 0;
-  int j = 0;
-
-  if (semaphores[i].queue[0] == 0)
-    return 0;
-
-  p = semaphores[i].queue[0];
-
-  for (j = 0; j < NPROC - 1; j++)
-  {
-    if (semaphores[i].queue[j + 1] != 0)
-      semaphores[i].queue[j] = semaphores[i].queue[j + 1];
-    else
-    {
-      semaphores[i].queue[j] = 0;
-      break;
-    }
+    sema[i].value = sema[i].value - 1;
   }
 
-  return p;
+  release(&sema[i].lock);
+
+  return 0;
 }
 
-int sem_init(int i, int v, int init)
+int sem_release(int i) 
 {
-  semaphores[i].max_procs = v;
-  semaphores[i].procs_no = init;
-  initlock(&(semaphores[i].lock), (char *)i + '0');
+  acquire(&sema[i].lock);
 
-  return 1;
-}
-int sem_acquire(int i)
-{
-  struct proc *p = myproc();
-  acquire(&(semaphores[i].lock));
-  if (semaphores[i].procs_no < semaphores[i].max_procs)
-    semaphores[i].procs_no += 1;
-  else
-  {
-    add_proc_to_sem_queue(i, p);
-    sleep(p, &(semaphores[i].lock));
-    semaphores[i].procs_no += 1;
-  }
-  release(&(semaphores[i].lock));
+  sema[i].value += 1;
+  wakeup(&sema[i]);
+  release(&sema[i].lock);
 
-  return 1;
-}
-
-int sem_release(int i)
-{
-  struct proc *p = 0;
-  acquire(&(semaphores[i].lock));
-  semaphores[i].procs_no -= 1;
-  p = pop_sem_queue(i);
-  // phstate[i] = HUNGRY;
-  release(&(semaphores[i].lock));
-  if (p != 0){
-    wakeup(p);
-  }
-
-  return 1;
+  return 0;
 }
 
 void reentrant(int count)

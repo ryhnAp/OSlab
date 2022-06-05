@@ -23,21 +23,9 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-
-int find_next_prime_number(int n);
-int get_call_count(int syscall_number);
-int get_most_caller(int syscall_number);
-int wait_for_process(int pid);
-
-int change_queue(int, int);
-int print_process(void);
-void BJF_proc_level(int, int, int, int);
-void BJF_sys_level(int, int, int);
-
+int sem_init(int, int);
 int sem_acquire(int);
 int sem_release(int);
-int sem_init(int, int, int);
-
 void reentrant(int);
 
 // ulib.c

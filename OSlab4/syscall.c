@@ -103,21 +103,9 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-
-extern int sys_find_next_prime_number(void);
-extern int sys_get_call_count(void);
-extern int sys_get_most_caller(void);
-extern int sys_wait_for_process(void);
-
-extern int sys_change_queue(void);
-extern int sys_print_process(void);
-extern int sys_BJF_proc_level(void);
-extern int sys_BJF_sys_level(void);
-
+extern int sys_sem_init(void);
 extern int sys_sem_acquire(void);
 extern int sys_sem_release(void);
-extern int sys_sem_init(void);
-
 extern int sys_reentrant(void);
 
 static int (*syscalls[])(void) = {
@@ -142,22 +130,10 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_find_next_prime_number]	sys_find_next_prime_number,
-[SYS_get_call_count]	sys_get_call_count,
-[SYS_get_most_caller]	sys_get_most_caller,
-[SYS_wait_for_process]	sys_wait_for_process,
-
-[SYS_change_queue] sys_change_queue,
-[SYS_print_process] sys_print_process,
-[SYS_BJF_proc_level] sys_BJF_proc_level,
-[SYS_BJF_sys_level] sys_BJF_sys_level,
-
+[SYS_sem_init] sys_sem_init,
 [SYS_sem_acquire] sys_sem_acquire,
 [SYS_sem_release] sys_sem_release,
-[SYS_sem_init] sys_sem_init,
-
 [SYS_reentrant] sys_reentrant,
-
 };
 
 void
@@ -169,7 +145,6 @@ syscall(void)
   num = curproc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
-    curproc->call_count[num]++;
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             curproc->pid, curproc->name, num);

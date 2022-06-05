@@ -21,18 +21,7 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 
-#define SYS_find_next_prime_number 22
-#define SYS_get_call_count 23
-#define SYS_get_most_caller 24
-#define SYS_wait_for_process 25
-
-#define SYS_change_queue 26
-#define SYS_print_process 27
-#define SYS_BJF_proc_level 28
-#define SYS_BJF_sys_level 29
-
-#define SYS_sem_acquire 30
-#define SYS_sem_release 31
-#define SYS_sem_init 32
-
-#define SYS_reentrant 33
+#define SYS_sem_init 31
+#define SYS_sem_acquire 32
+#define SYS_sem_release 33
+#define SYS_reentrant 34
