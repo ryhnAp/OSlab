@@ -5,11 +5,11 @@ _BJF_proc_level:     file format elf32-i386
 Disassembly of section .text:
 
 00000000 <main>:
+#include "stat.h"
+#include "user.h"
+#include "fcntl.h"
 
-
-
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 { 
    0:	f3 0f 1e fb          	endbr32 
    4:	8d 4c 24 04          	lea    0x4(%esp),%ecx
@@ -66,7 +66,7 @@ main(int argc, char *argv[])
   53:	56                   	push   %esi
   54:	e8 5a 03 00 00       	call   3b3 <BJF_proc_level>
 
-  exit();
+    exit();
   59:	83 c4 20             	add    $0x20,%esp
   5c:	e8 82 02 00 00       	call   2e3 <exit>
         printf(1, "Insufficient inputs\n", sizeof("Insufficient inputs\n"));

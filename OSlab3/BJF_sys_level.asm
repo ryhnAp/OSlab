@@ -5,11 +5,11 @@ _BJF_sys_level:     file format elf32-i386
 Disassembly of section .text:
 
 00000000 <main>:
+#include "fcntl.h"
 
 
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 { 
    0:	f3 0f 1e fb          	endbr32 
    4:	8d 4c 24 04          	lea    0x4(%esp),%ecx
@@ -60,7 +60,7 @@ main(int argc, char *argv[])
   46:	56                   	push   %esi
   47:	e8 5f 03 00 00       	call   3ab <BJF_sys_level>
 
-  exit();
+    exit();
   4c:	e8 82 02 00 00       	call   2d3 <exit>
         printf(1, "Insufficient inputs\n", sizeof("Insufficient inputs\n"));
   51:	50                   	push   %eax

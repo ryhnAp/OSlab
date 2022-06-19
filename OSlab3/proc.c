@@ -430,7 +430,7 @@ scheduler(void)
         continue;
 
       for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->wait_cycles >= 8000 && p->state == RUNNABLE) {
+        if(p->wait_cycles >= 500 && p->state == RUNNABLE) {
           p->wait_cycles = 0;
           p->qnum = 1; // transfer this process to first queue
         } else if(p->state == RUNNABLE){
